@@ -37,6 +37,10 @@ def add_item():
     db.session.commit()
     return {"id": item.id, "text": item.text}, 201
 
-if __name__ == "__main__":
-    api.run(host="0.0.0.0", port=5000)
+import os
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    api.run(host='0.0.0.0', port=port)
+
 
