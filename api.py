@@ -1,19 +1,32 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+import os
 
 api = Flask(__name__)
 
-api.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///items.db"
+# Obtener la DATABASE_URL definida como variable de entorno
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL no está definida.")
+
+# Ajuste para URLs postgres:// (solo necesario si algún proveedor lo usa)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+api.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 api.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(api)
 CORS(api)
 
+# Modelo Item
 class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(200), nullable=False)
 
+# Crear tablas automáticamente
 with api.app_context():
     db.create_all()
 
@@ -30,17 +43,16 @@ def list_items():
 def add_item():
     data = request.get_json()
     text = data.get("text")
+    
     if not text:
         return {"msg": "Texto requerido"}, 400
+
     item = Item(text=text)
     db.session.add(item)
     db.session.commit()
+
     return {"id": item.id, "text": item.text}, 201
 
-import os
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    api.run(host='0.0.0.0', port=port)
-
-
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    api.run(host="0.0.0.0", port=port)
